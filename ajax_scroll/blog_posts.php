@@ -1,6 +1,6 @@
 <?php
   // You can simulate a slow server with sleep
-//   sleep(2);
+   sleep(2);
 
   function is_ajax_request() {
     return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&

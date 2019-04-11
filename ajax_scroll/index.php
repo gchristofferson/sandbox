@@ -29,13 +29,14 @@
 </div>
 
 <div id="load-more-container">
-    <button id="load-more">Load more</button>
+    <button id="load-more" data-page="0">Load more</button>
 </div>
 
 <script>
 
     let container = document.getElementById('blog-posts');
     let load_more = document.getElementById('load-more');
+    let request_in_progress = false;
 
     function showSpinner() {
         let spinner = document.getElementById("spinner");
@@ -60,26 +61,56 @@
         // This causes browser to parse it as elements
         let temp = document.createElement('div');
         temp.innerHTML = new_html;
+
+        // Then we can find and work with those elements.
+        // Use first element child because of how dom treats whitespace
+        let class_name = temp.firstElementChild.className;
+        let items = temp.getElementsByClassName(class_name);
+
+        let len = items.length;
+        for (let i = 0; i < len; i++ ) {
+            div.appendChild(items[0]);
+        }
+    }
+    
+    function setCurrentPage(page) {
+        console.log('Incrementing page to: ' + page);
+        load_more.setAttribute('data-page', page);
     }
 
+    function scrollReaction() {
+        let content_height = container.offsetHeight;
+        let current_y = window.innerHeight + window.pageYOffset;
+        // console.log(current_y + '/' + content_height);
+        if (current_y >= content_height) {
+            loadMore();
+        }
+    }
+    
     function loadMore() {
 
+        if (request_in_progress) { return; }
+        request_in_progress = true;
         showSpinner();
         hideLoadMore();
 
         let xhr = new XMLHttpRequest();
-        xhr.open('GET', 'blog_posts.php?page=1', true);
+        let page = parseInt(load_more.getAttribute('data-page'));
+        let next_page = page + 1;
+        xhr.open('GET', 'blog_posts.php?page=' + next_page, true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.onreadystatechange = function () {
-            if (xhr.readyState == 4 && xhr.status == 200) {
+            if (xhr.readyState === 4 && xhr.status === 200) {
                 let result = xhr.responseText;
                 console.log('Result: ' + result);
 
                 hideSpinner();
+                setCurrentPage(next_page);
                 // append results to end of blog posts
                 appendToDiv(container, result);
 
                 showLoadMore();
+                request_in_progress = false;
 
             }
         };
@@ -87,6 +118,9 @@
     }
 
     load_more.addEventListener("click", loadMore);
+    window.onscroll = function() {
+        scrollReaction();
+    };
 
     // Load even the first page with Ajax
     loadMore();
